@@ -1,4 +1,24 @@
 ---
+- name: Check for existing host configuration.
+  stat:
+    path: "fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+  register: tinc_hostfile
+  delegate_to: localhost
+
+- name: Read existing public key from the host configuration.
+  command: awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}
+  register: public_key
+  when: tinc_hostfile.stat.exists == True
+  delegate_to: localhost
+
+- name: Create host configuration.
+  template:
+    src: host.j2
+    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+  notify:
+  - Restart tinc
+  become: yes
+
 - name: Check for the public key in the host file.
   command: awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' /etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}
   register: public_key
@@ -19,7 +39,7 @@
   become: yes
 
 - name: Create tinc key pair (Debian).
-  shell: "tincd -n {{ tinc_interfaces[item].name }} -K 4096"
+  shell: "tincd -n {{ tinc_interfaces[item].name }} -K {{ tinc_key_bits }}"
   args:
     creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
   notify:
@@ -28,7 +48,7 @@
   when: public_key.changed and ansible_distribution == "Debian"
 
 - name: Create tinc key pair (Gentoo).
-  shell: "tinc -n {{ tinc_interfaces[item].name }} generate-keys 4096"
+  shell: "tinc -n {{ tinc_interfaces[item].name }} generate-keys {{ tinc_key_bits }}"
   args:
     creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
   notify:

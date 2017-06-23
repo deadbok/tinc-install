@@ -1,4 +1,12 @@
+{% if 'external' in tinc_interfaces[item].keys() %}
 Address = {{ tinc_interfaces[item].external }}
-{% if tinc_interfaces[item]-mode == "router" %}
-Subnet = {{ tinc_interfaces[item].ip4 }}/32
+{% endif %}
+{% if tinc_interfaces[item].mode == "switch" %}
+Subnet = {{ tinc_switch_net_address }}
+{% endif %}
+{% if tinc_interfaces[item].mode == "router" %}
+Subnet = {{ tinc_interfaces[item].ip4 }}/{{ tinc_router_net_cidr }}
+{% endif %}
+{% if 'stdout' in public_key %}
+{{ public_key.stdout }}
 {% endif %}

@@ -1,9 +1,9 @@
 ---
 - name: Set distribution specific variables
   include_vars: '{{ item }}'
-  with_first_found:
-    - '{{ ansible_distribution }}.yml'
+  with_items:
     - default.yml
+    - '{{ ansible_distribution }}.yml'
 
 - name: Install tinc
   package:
@@ -42,27 +42,6 @@
     dest: /etc/tinc/{{ tinc_interfaces[item].name }}/tinc.conf
   become: yes
   with_items: "{{ tinc_interfaces }}"
-
-- name: Ensure the external address is set.
-  lineinfile:
-    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
-    line: "Address = {{ tinc_interfaces[item].external }}"
-    create: yes
-  notify:
-  - Restart tinc
-  when: tinc_interfaces[item].external is defined
-  become: yes
-  with_items: "{{ tinc_interfaces }}"
-
-#- name: Ensure the internal tinc address is set.
-#  lineinfile:
-#    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
-#    line: "Subnet = {{ tinc_interfaces[item].ip4 }}/32"
-#    create: yes
-#  notify:
-#  - Restart tinc
-#  become: yes
-#  with_items: "{{ tinc_interfaces }}"
 
 - include: key.yml
   with_items: "{{ tinc_interfaces }}"
