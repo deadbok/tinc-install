@@ -1,5 +1,7 @@
 # Task
 
+**Supported distributions:** Debian, Gentoo
+
 Install tinc and set up a network using host variables.
 
  * Install tinc
