@@ -1,0 +1,38 @@
+---
+- name: Check for the public key in the host file.
+  command: awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' /etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}
+  register: public_key
+  changed_when: "public_key.stdout_lines|length < 1"
+
+- name: Delete private RSA key before genrating a new key pair.
+  file:
+    path: /etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv
+    state: absent
+  when: public_key.changed
+  become: yes
+
+- name: Delete private Ed25519 key before genrating a new key pair.
+  file:
+    path: /etc/tinc/{{ tinc_interfaces[item].name }}/ed25519_key.priv
+    state: absent
+  when: public_key.changed and ansible_distribution == "Gentoo"
+  become: yes
+
+- name: Create tinc key pair (Debian).
+  shell: "tincd -n {{ tinc_interfaces[item].name }} -K 4096"
+  args:
+    creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
+  notify:
+    - Restart tinc
+  become: yes
+  when: public_key.changed and ansible_distribution == "Debian"
+
+- name: Create tinc key pair (Gentoo).
+  shell: "tinc -n {{ tinc_interfaces[item].name }} generate-keys 4096"
+  args:
+    creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
+  notify:
+    - Restart tinc
+  become: yes
+  when: public_key.changed and ansible_distribution == "Gentoo"
+...

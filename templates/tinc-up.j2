@@ -1,0 +1,2 @@
+#!/bin/sh
+ifconfig {{ item }} {{ tinc_interfaces[item].ip4 }} netmask {{ tinc_interfaces[item].netmask4 }}

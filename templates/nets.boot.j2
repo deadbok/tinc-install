@@ -1,0 +1,5 @@
+{% for tinc_interface in tinc_interfaces %}
+{% if tinc_interfaces[tinc_interface].onboot %}
+{{ tinc_interfaces[tinc_interface].name }}
+{% endif %}
+{% endfor %}

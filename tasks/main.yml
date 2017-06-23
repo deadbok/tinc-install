@@ -1,0 +1,110 @@
+---
+- name: Set distribution specific variables
+  include_vars: '{{ item }}'
+  with_first_found:
+    - '{{ ansible_distribution }}.yml'
+    - default.yml
+
+- name: Install tinc
+  package:
+    name: tinc
+    state: latest
+  become: yes
+  when: tinc_interfaces is defined
+
+- name: Ensure tinc network name directory exists
+  file:
+    path: /etc/tinc/{{ tinc_interfaces[item].name }}/hosts
+    recurse: True
+    state: directory
+  become: yes
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Set configured tinc networks to start at boot.
+  template:
+    src: nets.boot.j2
+    dest: /etc/tinc/nets.boot
+  become: yes
+  when: tinc_interfaces is defined
+
+- name: Set configured tinc networks to start at boot (Gentoo).
+  lineinfile:
+    dest: "/etc/conf.d/tinc.networks"
+    line: "NETWORK: {{ tinc_interfaces[item].name }}"
+    create: yes
+  become: yes
+  when: "ansible_distribution == 'Gentoo' and tinc_interfaces[item].onboot"
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Create network configurations.
+  template:
+    src: tinc.conf.j2
+    dest: /etc/tinc/{{ tinc_interfaces[item].name }}/tinc.conf
+  become: yes
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Ensure the external address is set.
+  lineinfile:
+    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    line: "Address = {{ tinc_interfaces[item].external }}"
+    create: yes
+  notify:
+  - Restart tinc
+  when: tinc_interfaces[item].external is defined
+  become: yes
+  with_items: "{{ tinc_interfaces }}"
+
+#- name: Ensure the internal tinc address is set.
+#  lineinfile:
+#    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+#    line: "Subnet = {{ tinc_interfaces[item].ip4 }}/32"
+#    create: yes
+#  notify:
+#  - Restart tinc
+#  become: yes
+#  with_items: "{{ tinc_interfaces }}"
+
+- include: key.yml
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Create tinc-down file
+  template:
+    src: tinc-down.j2
+    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/tinc-down"
+    mode: 0755
+  notify:
+    - Restart tinc
+  become: yes
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Create tinc-up file
+  template:
+    src: tinc-up.j2
+    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/tinc-up"
+    mode: 0755
+  notify:
+    - Restart tinc
+  become: yes
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Fetch tinc hosts file.
+  fetch:
+    src: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    dest: "fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    flat: yes
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Sync tinc hosts files to tmp
+  synchronize:
+    src: "fetch/tinc/{{ tinc_interfaces[item].name }}"
+    dest: "/tmp/tinc/"
+  with_items: "{{ tinc_interfaces }}"
+
+- name: Sync tinc hosts files to tinc configuration directory
+  synchronize:
+    src: "/tmp/tinc/"
+    dest: "/etc/tinc/"
+  become: yes
+  notify:
+  - Reload tinc
+  delegate_to: "{{ inventory_hostname }}"

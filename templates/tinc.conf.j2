@@ -1,0 +1,18 @@
+Name =  {{ tinc_interfaces[item].hostname }}
+AddressFamily = ipv4
+Interface = {{ item }}
+{% for host in hostvars %}
+{% if 'tinc_interfaces' in hostvars[host] %}
+{% for tinc_interface in hostvars[host]['tinc_interfaces'].keys() %}
+{% if tinc_interfaces[item].hostname != hostvars[host]['tinc_interfaces'][tinc_interface].hostname %}
+{% if hostvars[host]['tinc_interfaces'][tinc_interface].master %}
+ConnectTo = {{ hostvars[host]['tinc_interfaces'][tinc_interface].hostname }}
+{% endif %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% endfor %}
+Mode = {{ tinc_interfaces[item].mode }}
+PMTUDiscovery = yes
+Compression = 10
+LocalDiscovery = yes

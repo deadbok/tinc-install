@@ -1,0 +1,4 @@
+Address = {{ tinc_interfaces[item].external }}
+{% if tinc_interfaces[item]-mode == "router" %}
+Subnet = {{ tinc_interfaces[item].ip4 }}/32
+{% endif %}
