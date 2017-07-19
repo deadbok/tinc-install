@@ -30,7 +30,7 @@ Gentoo specific configurations are in `Gentoo.yml`.
 ## Hosts
 
 Each hosts tinc configuration is created using host variables. A configuration
-for a a host connecting to two tinc networks, one of them using  bridge `br0`
+for a host connecting to two tinc networks, one of them using  bridge `br0`
 looks like this:
 
     tinc_interfaces:

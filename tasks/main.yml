@@ -12,6 +12,13 @@
   become: yes
   when: tinc_interfaces is defined
 
+- name: Install tinc ifconfig (Debian).
+  package:
+    name: net-tools
+    state: latest
+  become: yes
+  when: ansible_distribution == "Debian"
+
 - name: Ensure tinc network name directory exists.
   file:
     path: /etc/tinc/{{ tinc_interfaces[item].name }}/hosts
