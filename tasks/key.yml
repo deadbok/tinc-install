@@ -55,4 +55,11 @@
     - Restart tinc
   become: yes
   when: public_key.changed and ansible_distribution == "Gentoo"
+
+- name: "Enable tinc network {{ tinc_interfaces[item].name }} at boot (Debian)"
+  service:
+    name: "{{ tinc_service }}@{{ tinc_interfaces[item].name }}"
+    enabled: yes
+  become: yes
+  when: ansible_distribution == "Debian"
 ...

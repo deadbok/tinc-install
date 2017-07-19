@@ -12,7 +12,7 @@
   become: yes
   when: tinc_interfaces is defined
 
-- name: Ensure tinc network name directory exists
+- name: Ensure tinc network name directory exists.
   file:
     path: /etc/tinc/{{ tinc_interfaces[item].name }}/hosts
     recurse: True
@@ -65,6 +65,12 @@
     - Restart tinc
   become: yes
   with_items: "{{ tinc_interfaces }}"
+
+- name: Enable tinc at boot
+  service:
+    name: "{{ tinc_service }}"
+    enabled: yes
+  become: yes
 
 - name: Fetch tinc hosts file.
   fetch:

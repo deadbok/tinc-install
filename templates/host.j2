@@ -2,10 +2,10 @@
 Address = {{ tinc_interfaces[item].external }}
 {% endif %}
 {% if tinc_interfaces[item].mode == "switch" %}
-Subnet = {{ tinc_switch_net_address }}
+Subnet = {{ hostvars[inventory_hostname]['tinc_switch_net_address_' + item] }}
 {% endif %}
 {% if tinc_interfaces[item].mode == "router" %}
-Subnet = {{ tinc_interfaces[item].ip4 }}/{{ tinc_router_net_cidr }}
+Subnet = {{ tinc_interfaces[item].ip4 }}/{{ hostvars[inventory_hostname]['tinc_router_net_cidr_' + item ] }}
 {% endif %}
 {% if 'stdout' in public_key %}
 {{ public_key.stdout }}

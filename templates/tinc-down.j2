@@ -1,2 +1,8 @@
 #!/bin/sh
+{% if 'bridge' in tinc_interfaces[item].keys() %}
+brctl delif {{ tinc_interfaces[item].bridge }} {{ item }}
+ip route del {{ hostvars[inventory_hostname]['tinc_switch_net_address_' + item] }} {{ tinc_interfaces[item].bridge }}
 ifconfig {{ item }} down
+{% else %}
+ifconfig {{ item }} down
+{% endif %}

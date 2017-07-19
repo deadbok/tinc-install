@@ -1,5 +1,6 @@
 ---
 tinc_service: "tinc"
-tinc_switch_net_address: "192.168.3.0/24"
-tinc_router_net_cidr: "32"
-tinc_key_bits: 8192
+tinc_switch_net_address_tun0: "192.168.3.0/24"
+tinc_router_net_cidr_tun1: "32"
+tinc_key_bits: 4096
+...

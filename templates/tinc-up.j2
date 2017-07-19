@@ -1,2 +1,8 @@
 #!/bin/sh
+{% if 'bridge' in tinc_interfaces[item].keys() %}
+ifconfig {{ item }} 0.0.0.0
+ip route add {{ hostvars[inventory_hostname]['tinc_switch_net_address_' + item] }} {{ tinc_interfaces[item].bridge }}
+brctl addif {{ tinc_interfaces[item].bridge }} {{ item }}
+{% else %}
 ifconfig {{ item }} {{ tinc_interfaces[item].ip4 }} netmask {{ tinc_interfaces[item].netmask4 }}
+{% endif %}
