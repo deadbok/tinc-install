@@ -42,7 +42,7 @@ Gentoo specific configurations are in `Gentoo.yml`.
    * *Default*: "4096"
  * `tinc_conf_dir`: Where to store tinc configuration files.
    * *Default*: "/etc/tinc"
-   * *Default*: "/usr/local/etc/tinc"
+   * *FreeBSD*: "/usr/local/etc/tinc"
 
 ## Hosts
 
