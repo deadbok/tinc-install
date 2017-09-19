@@ -1,13 +1,5 @@
 # Task
 
-**Supported distributions and operating systems:**
-
- * Linux
-   * Debian (Jessie, Stretch)
-   * Gentoo
- * *BSD
-   * FreeBSD
-
 Install tinc and set up a network using host variables.
 
  * Install tinc
@@ -19,11 +11,19 @@ Install tinc and set up a network using host variables.
 
 # Dependencies
 
-## Linux host
+**Supported distributions and operating systems:**
+
+ * Linux
+   * Debian (Jessie, Stretch)
+   * Gentoo
+ * *BSD
+   * FreeBSD
+
+## Linux hosts
 
  * Python 2
 
-## BSD
+## BSD hosts
 
  * Python 2
 
@@ -31,13 +31,18 @@ Install tinc and set up a network using host variables.
 
 Gentoo specific configurations are in `Gentoo.yml`.
 
- * **tinc_service:** Name of the tinc service.
+ * `tinc_service`: Name of the tinc service.
    * *Default:* "tinc"
    * *Gentoo:* "tincd"
- * **tinc_switch_net_address_vpn interface:** Address of the tinc network in switched mode.
+ * `tinc_switch_net_address_vpn_*interface*`: Address of the tinc network in switched mode.
    * *Default:* "192.168.3.0/24"
- * **tinc_router_net_cidr_vpn interface:** Netmask of the tinc network in routed mode.
+ * `tinc_router_net_cidr_vpn_*interface)*`: Netmask of the tinc network in routed mode.
    * *Default*: "32"
+ * `tinc_key_bits`: Bits to use when geneating the key.
+   * *Default*: "4096"
+ * `tinc_conf_dir`: Where to store tinc configuration files.
+   * *Default*: "/etc/tinc"
+   * *Default*: "/usr/local/etc/tinc"
 
 ## Hosts
 
