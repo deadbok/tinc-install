@@ -1,6 +1,12 @@
 # Task
 
-**Supported distributions:** Debian, Gentoo
+**Supported distributions and operating systems:**
+
+ * Linux
+   * Debian (Jessie, Stretch)
+   * Gentoo
+ * *BSD
+   * FreeBSD
 
 Install tinc and set up a network using host variables.
 
@@ -13,7 +19,13 @@ Install tinc and set up a network using host variables.
 
 # Dependencies
 
-None.
+## Linux host
+
+ * Python 2
+
+## BSD
+
+ * Python 2
 
 # Variables
 

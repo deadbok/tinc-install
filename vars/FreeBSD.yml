@@ -1,0 +1,4 @@
+---
+tinc_service: "tincd"
+tinc_conf_dir: "/usr/local/etc/tinc"
+...

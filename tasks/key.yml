@@ -6,7 +6,7 @@
   delegate_to: localhost
 
 - name: Read existing public key from the host configuration.
-  command: awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}
+  command: "awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
   register: public_key
   when: tinc_hostfile.stat.exists == True
   delegate_to: localhost
@@ -14,52 +14,83 @@
 - name: Create host configuration.
   template:
     src: host.j2
-    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    dest: "{{ tinc_conf_dir }}//{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
   notify:
   - Restart tinc
   become: yes
 
 - name: Check for the public key in the host file.
-  command: awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' /etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}
+  command: "awk '/^-----BEGIN RSA PUBLIC KEY-----$/{f=1}f' {{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
   register: public_key
   changed_when: "public_key.stdout_lines|length < 1"
 
-- name: Delete private RSA key before genrating a new key pair.
+- name: Delete private RSA private key before genrating a new key pair.
   file:
-    path: /etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv
+    path: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/rsa_key.priv"
     state: absent
   when: public_key.changed
   become: yes
 
 - name: Delete private Ed25519 key before genrating a new key pair.
   file:
-    path: /etc/tinc/{{ tinc_interfaces[item].name }}/ed25519_key.priv
+    path: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/ed25519_key.priv"
     state: absent
   when: public_key.changed and ansible_distribution == "Gentoo"
   become: yes
 
-- name: Create tinc key pair (Debian).
+- name: Create tinc key pair (Debian & FreeBSD).
   shell: "tincd -n {{ tinc_interfaces[item].name }} -K {{ tinc_key_bits }}"
   args:
-    creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
+    creates: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/rsa_key.priv"
   notify:
     - Restart tinc
   become: yes
-  when: public_key.changed and ansible_distribution == "Debian"
+  when: (public_key.changed and ansible_distribution == "Debian") or (public_key.changed and ansible_distribution == "FreeBSD")
 
 - name: Create tinc key pair (Gentoo).
   shell: "tinc -n {{ tinc_interfaces[item].name }} generate-keys {{ tinc_key_bits }}"
   args:
-    creates: "/etc/tinc/{{ tinc_interfaces[item].name }}/rsa_key.priv"
+    creates: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/rsa_key.priv"
   notify:
     - Restart tinc
   become: yes
   when: public_key.changed and ansible_distribution == "Gentoo"
 
-- name: "Enable tinc network {{ tinc_interfaces[item].name }} at boot (Debian)"
+- name: Fetch updated tinc hosts file.
+  fetch:
+    src: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    dest: "fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    flat: yes
+  when: public_key.changed
+
+- name: "Enable tinc network {{ tinc_interfaces[item].name }} at boot (Debian 9)"
   service:
     name: "{{ tinc_service }}@{{ tinc_interfaces[item].name }}"
     enabled: yes
   become: yes
-  when: ansible_distribution == "Debian"
+  when:
+     - ansible_distribution == "Debian"
+     - ansible_distribution_major_version == "9"
+
+- name: "Enable tinc network {{ tinc_interfaces[item].name }} at boot (Debian 8)"
+  service:
+    name: "{{ tinc_service }}"
+    enabled: yes
+  become: yes
+  when:
+     - ansible_distribution == "Debian"
+     - ansible_distribution_major_version == "8"
+
+- name: Enable tinc network at boot (FreeBSD)
+  shell: 'sysrc tincd_cfg+={{ tinc_interfaces[item].name }}'
+  become: yes
+  when:
+    - ansible_distribution == "FreeBSD"
+    - tinc_interfaces[item].onboot
+
+- name: Add tap interface (FreeBSD)
+  shell: 'sysrc cloned_interfaces+={{ item }}'
+  become: yes
+  when:
+    - ansible_distribution == "FreeBSD"
 ...

@@ -10,7 +10,18 @@
     name: tinc
     state: latest
   become: yes
-  when: tinc_interfaces is defined
+  when:
+    - tinc_interfaces is defined
+    - ansible_distribution != "FreeBSD"
+
+- name: Install tinc (FreeBSD)
+  package:
+    name: tinc
+    state: present
+  become: yes
+  when:
+    - tinc_interfaces is defined
+    - ansible_distribution == "FreeBSD"
 
 - name: Install tinc ifconfig (Debian).
   package:
@@ -21,16 +32,17 @@
 
 - name: Ensure tinc network name directory exists.
   file:
-    path: /etc/tinc/{{ tinc_interfaces[item].name }}/hosts
+    path: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/hosts"
     recurse: True
     state: directory
+    owner: root
   become: yes
   with_items: "{{ tinc_interfaces }}"
 
 - name: Set configured tinc networks to start at boot.
   template:
     src: nets.boot.j2
-    dest: /etc/tinc/nets.boot
+    dest: "{{ tinc_conf_dir }}/nets.boot"
   become: yes
   when: tinc_interfaces is defined
 
@@ -46,7 +58,7 @@
 - name: Create network configurations.
   template:
     src: tinc.conf.j2
-    dest: /etc/tinc/{{ tinc_interfaces[item].name }}/tinc.conf
+    dest: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/tinc.conf"
   become: yes
   with_items: "{{ tinc_interfaces }}"
 
@@ -56,7 +68,7 @@
 - name: Create tinc-down file
   template:
     src: tinc-down.j2
-    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/tinc-down"
+    dest: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/tinc-down"
     mode: 0755
   notify:
     - Restart tinc
@@ -66,7 +78,7 @@
 - name: Create tinc-up file
   template:
     src: tinc-up.j2
-    dest: "/etc/tinc/{{ tinc_interfaces[item].name }}/tinc-up"
+    dest: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/tinc-up"
     mode: 0755
   notify:
     - Restart tinc
@@ -78,10 +90,16 @@
     name: "{{ tinc_service }}"
     enabled: yes
   become: yes
+  when: ansible_distribution != "FreeBSD"
+
+- name: Enable tinc at boot (FreeBSD)
+  shell: 'sysrc tincd_enable="YES"'
+  become: yes
+  when: ansible_distribution == "FreeBSD"
 
 - name: Fetch tinc hosts file.
   fetch:
-    src: "/etc/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
+    src: "{{ tinc_conf_dir }}/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
     dest: "fetch/tinc/{{ tinc_interfaces[item].name }}/hosts/{{ tinc_interfaces[item].hostname }}"
     flat: yes
   with_items: "{{ tinc_interfaces }}"
@@ -95,7 +113,7 @@
 - name: Sync tinc hosts files to tinc configuration directory
   synchronize:
     src: "/tmp/tinc/"
-    dest: "/etc/tinc/"
+    dest: "{{ tinc_conf_dir }}/"
   become: yes
   notify:
   - Reload tinc
